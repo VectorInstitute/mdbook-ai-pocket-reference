@@ -1,0 +1,29 @@
+[package]
+name = "mdbook-ai-pocket-reference"
+version = "0.1.0"
+edition = "2021"
+description = "mdbook preprocessor for the ai-pocket-reference project."
+authors = ["Andrei Fajardo <andrei.fajardo@vectorinstitute.ai>"]
+license = "MIT"
+repository = "https://github.com/VectorInstitute/mdbook-ai-pocket-reference"
+
+[dependencies]
+anyhow = "1.0.95"
+clap = { version = "4.5.28", features = ["derive", "std"] }
+env_logger = "0.11.6"
+handlebars = "6.3.1"
+log = "0.4.25"
+mdbook = "0.4.44"
+once_cell = "1.20.3"
+regex = "1.11.1"
+rstest = "0.24.0"
+serde = "1.0.217"
+serde_json = "1.0.138"
+
+[[bin]]
+name = "mdbook-ai-pocket-reference"
+path = "src/bin/main.rs"
+
+[lib]
+name = "mdbook_ai_pocket_reference"
+path = "src/lib.rs"
