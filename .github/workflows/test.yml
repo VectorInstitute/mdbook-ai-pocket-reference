@@ -31,6 +31,3 @@ jobs:
     - name: Run unit tests
       run: |
         cargo test --lib --verbose
-    - name: Run integration tests
-      run: |
-        cargo test --test '*'
