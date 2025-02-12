@@ -1,8 +1,9 @@
-use handlebars::Handlebars;
+use handlebars::{to_json, Handlebars};
 use mdbook::book::{Book, BookItem};
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
 use once_cell::sync::Lazy;
 use regex::{CaptureMatches, Captures, Regex};
+use serde_json::value::Map;
 use std::collections::HashMap;
 
 const AIPR_HEADER_TEMPLATE: &str = include_str!("./templates/header.hbs");
@@ -141,14 +142,28 @@ impl<'a> AIPRLink<'a> {
 
     fn render(&self) -> anyhow::Result<String> {
         match &self.link_type {
-            AIPRLinkType::Header(_settings) => {
-                // todo: handlebars rendering
+            AIPRLinkType::Header(settings) => {
                 let mut handlebars = Handlebars::new();
-                // register template from a file and assign a name to it
+                // register template from const str and assign a name to it
                 handlebars
                     .register_template_string("aipr_header", AIPR_HEADER_TEMPLATE)
                     .unwrap();
-                Ok(String::default())
+
+                // create data for rendering handlebar
+                let mut data = Map::new();
+                if let Some(colab_path) = &settings.colab {
+                    data.insert("colab_nbs".to_string(), to_json(vec![colab_path]));
+                }
+                data.insert("submit_issue".to_string(), to_json(settings.submit_issue));
+                if settings.reading_time {
+                    let rt = "7 mins";
+                    data.insert("reading_times".to_string(), to_json(vec![rt]));
+                }
+
+                // render
+                let html_string = handlebars.render("aipr_header", &data)?;
+
+                Ok(html_string)
             }
         }
     }
