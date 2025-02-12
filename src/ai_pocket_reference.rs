@@ -13,6 +13,11 @@ const WORDS_PER_MINUTE: usize = 200;
 #[derive(Default)]
 pub struct AIPRPreprocessor;
 
+/// A preprocessor for expanding AI-Pocket-Reference helpers.
+///
+/// Supported helpers are:
+///
+/// - `{{#aipr_header <param-str>}}` - Adds the ai-pocket-reference header (optional param-str)
 impl AIPRPreprocessor {
     pub(crate) const NAME: &'static str = "ai-pocket-reference";
 
@@ -28,6 +33,8 @@ impl Preprocessor for AIPRPreprocessor {
     }
 
     fn run(&self, _ctx: &PreprocessorContext, mut book: Book) -> anyhow::Result<Book> {
+        // This run method's implementation follows the implementation of
+        // mdbook::preprocess::links::LinkPreprocessor.run().
         book.for_each_mut(|section: &mut BookItem| {
             if let BookItem::Chapter(ref mut ch) = *section {
                 let word_count = words_count::count(&ch.content);
@@ -41,9 +48,8 @@ impl Preprocessor for AIPRPreprocessor {
 }
 
 fn replace_all(s: &str, num_words: usize) -> String {
-    // When replacing one thing in a string by something with a different length,
-    // the indices after that will not correspond,
-    // we therefore have to store the difference to correct this
+    // This implementation follows closely to the implementation of
+    // mdbook::preprocess::links::replace_all.
     let mut previous_end_index = 0;
     let mut replaced = String::new();
 
