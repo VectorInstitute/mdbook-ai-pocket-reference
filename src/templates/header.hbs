@@ -5,13 +5,13 @@
       <img src="https://img.shields.io/badge/Suggest_an_Edit-black?logo=github&style=flat" alt="Suggest an Edit"/>
     </a>
     {{/if}}
-    {{#each colab_nbs as |c|}}
-    <a target="_blank" href="https://colab.research.google.com/github/VectorInstitute/ai-pocket-reference-code/blob/main/notebooks/{{c.path}}">
+    {{#with colab_nb}}
+    <a target="_blank" href="https://colab.research.google.com/github/VectorInstitute/ai-pocket-reference-code/blob/main/notebooks/{{path}}">
       <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
     </a>
-    {{/each}}
-    {{#each reading_times as |rt|}}
-    <p style="margin: 0;"><small>Reading time: {{rt.value}}</small></p>
-    {{/each}}
+    {{/with}}
+    {{#with reading_time}}
+    <p style="margin: 0;"><small>Reading time: {{value}}</small></p>
+    {{/with}}
   </div>
 </div>

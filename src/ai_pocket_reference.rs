@@ -3,6 +3,7 @@ use mdbook::book::{Book, BookItem};
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
 use once_cell::sync::Lazy;
 use regex::{CaptureMatches, Captures, Regex};
+use serde::Serialize;
 use serde_json::value::Map;
 use std::collections::HashMap;
 
@@ -152,12 +153,17 @@ impl<'a> AIPRLink<'a> {
                 // create data for rendering handlebar
                 let mut data = Map::new();
                 if let Some(colab_path) = &settings.colab {
-                    data.insert("colab_nbs".to_string(), to_json(vec![colab_path]));
+                    let colab_nb = ColabNB {
+                        path: colab_path.to_owned(),
+                    };
+                    data.insert("colab_nb".to_string(), to_json(colab_nb));
                 }
                 data.insert("submit_issue".to_string(), to_json(settings.submit_issue));
                 if settings.reading_time {
-                    let rt = "7 mins";
-                    data.insert("reading_times".to_string(), to_json(vec![rt]));
+                    let rt = ReadingTime {
+                        value: "7 min".to_string(),
+                    };
+                    data.insert("reading_time".to_string(), to_json(rt));
                 }
 
                 // render
@@ -167,6 +173,16 @@ impl<'a> AIPRLink<'a> {
             }
         }
     }
+}
+
+#[derive(PartialEq, Debug, Clone, Serialize)]
+pub struct ColabNB {
+    path: String,
+}
+
+#[derive(PartialEq, Debug, Clone, Serialize)]
+pub struct ReadingTime {
+    value: String,
 }
 
 #[allow(dead_code)]
@@ -294,6 +310,86 @@ mod tests {
     ) -> Result<()> {
         let setting = AIPRHeaderSettings::from_param_str(param_str);
         assert_eq!(setting, expected_setting);
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_link_render() -> Result<()> {
+        let link = AIPRLink {
+            start_index: 19,
+            end_index: 58,
+            link_type: AIPRLinkType::Header(AIPRHeaderSettings::from_param_str(
+                "colab=nlp/lora.ipynb",
+            )),
+            link_text: "{{ #aipr_header colab=nlp/lora.ipynb }}",
+        };
+
+        let html_string = link.render()?;
+        let expected = "<div style=\"display: flex; justify-content: \
+        space-between; align-items: center; margin-bottom: 2em;\">\n  <div>\n    \
+        <a target=\"_blank\" href=\"https://github.com/VectorInstitute/\
+        ai-pocket-reference/issues/new?template=edit-request.yml\">\n      \
+        <img src=\"https://img.shields.io/badge/Suggest_an_Edit-black?logo=\
+        github&style=flat\" alt=\"Suggest an Edit\"/>\n    </a>\n    \
+        <a target=\"_blank\" href=\"https://colab.research.google.com/github/\
+        VectorInstitute/ai-pocket-reference-code/blob/main/notebooks/nlp/lora.ipynb\
+        \">\n      <img src=\"https://colab.research.google.com/assets/colab-badge.svg\
+        \" alt=\"Open In Colab\"/>\n    </a>\n    <p style=\"margin: 0;\">\
+        <small>Reading time: 7 min</small></p>\n  </div>\n</div>\n";
+
+        println!("{:#?}", html_string);
+
+        assert_eq!(html_string, expected);
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_link_render_no_colab() -> Result<()> {
+        let link = AIPRLink {
+            start_index: 19,
+            end_index: 58,
+            link_type: AIPRLinkType::Header(AIPRHeaderSettings::default()),
+            link_text: "{{ #aipr_header }}",
+        };
+
+        let html_string = link.render()?;
+        let expected = "<div style=\"display: flex; justify-content: \
+        space-between; align-items: center; margin-bottom: 2em;\">\n  <div>\n    \
+        <a target=\"_blank\" href=\"https://github.com/VectorInstitute/\
+        ai-pocket-reference/issues/new?template=edit-request.yml\">\n      \
+        <img src=\"https://img.shields.io/badge/Suggest_an_Edit-black?logo=\
+        github&style=flat\" alt=\"Suggest an Edit\"/>\n    </a>\n    \
+        <p style=\"margin: 0;\"><small>Reading time: 7 min</small></p>\n  \
+        </div>\n</div>\n";
+
+        assert_eq!(html_string, expected);
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_link_render_no_colab_no_reading_time() -> Result<()> {
+        let link = AIPRLink {
+            start_index: 19,
+            end_index: 58,
+            link_type: AIPRLinkType::Header(AIPRHeaderSettings::from_param_str(
+                "reading_time=false",
+            )),
+            link_text: "{{ #aipr_header reading_time=false }}",
+        };
+
+        let html_string = link.render()?;
+        let expected = "<div style=\"display: flex; justify-content: \
+        space-between; align-items: center; margin-bottom: 2em;\">\n  <div>\n    \
+        <a target=\"_blank\" href=\"https://github.com/VectorInstitute/\
+        ai-pocket-reference/issues/new?template=edit-request.yml\">\n      \
+        <img src=\"https://img.shields.io/badge/Suggest_an_Edit-black?logo=\
+        github&style=flat\" alt=\"Suggest an Edit\"/>\n    </a>\n  \
+        </div>\n</div>\n";
+
+        assert_eq!(html_string, expected);
 
         Ok(())
     }
