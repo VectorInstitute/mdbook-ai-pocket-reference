@@ -228,9 +228,26 @@ mod tests {
 
     #[rstest]
     #[case(
-        "submit_issue=false,colab=nlp/lora.ipynb,reading_time=true",
-        AIPRHeaderSettings { colab: Some("nlp/lora.ipynb".to_string()), submit_issue: false, ..Default::default()})
-    ]
+        "submit_issue=false,colab=nlp/lora.ipynb,reading_time=false",
+        AIPRHeaderSettings {
+            colab: Some("nlp/lora.ipynb".to_string()),
+            submit_issue: false,
+            reading_time: false
+        }
+    )]
+    #[case(
+        "colab=nlp/lora.ipynb",
+        AIPRHeaderSettings {
+            colab: Some("nlp/lora.ipynb".to_string()),
+            ..Default::default()
+        }
+    )]
+    #[case(
+        "reading_time=falsee",
+        AIPRHeaderSettings {
+            ..Default::default()
+        }
+    )]
     fn test_aipr_header_settings(
         #[case] param_str: &str,
         #[case] expected_setting: AIPRHeaderSettings,
