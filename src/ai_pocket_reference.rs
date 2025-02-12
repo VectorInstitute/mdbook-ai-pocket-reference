@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use mdbook::book::Book;
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
 use once_cell::sync::Lazy;
@@ -44,15 +46,60 @@ fn replace_all(s: &str) -> String {
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug, Clone)]
-enum AIPRLinkType<'a> {
-    Header(Option<&'a str>),
+enum AIPRLinkType {
+    Header(AIPRHeaderSettings),
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, PartialEq)]
+struct AIPRHeaderSettings {
+    reading_time: bool,
+    submit_issue: bool,
+    colab: Option<String>,
+}
+
+impl Default for AIPRHeaderSettings {
+    fn default() -> Self {
+        Self {
+            reading_time: true,
+            submit_issue: true,
+            colab: None,
+        }
+    }
+}
+
+fn _parse_param_str(param_str: &str) -> HashMap<String, String> {
+    param_str
+        .split(',')
+        .filter_map(|pair| {
+            pair.split_once('=')
+                .map(|(key, value)| (key.trim().to_string(), value.trim().to_string()))
+        })
+        .collect()
+}
+
+impl AIPRHeaderSettings {
+    fn from_param_str(param_str: &str) -> Self {
+        let param_map = _parse_param_str(param_str);
+        let colab = param_map.get("colab").map(|s| s.to_owned());
+        let reading_time =
+            !matches!(param_map.get("reading_time"), Some(bool_str) if (bool_str == "false"));
+        let submit_issue =
+            !matches!(param_map.get("submit_issue"), Some(bool_str) if (bool_str == "false"));
+
+        Self {
+            reading_time,
+            submit_issue,
+            colab,
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
 struct AIPRLink<'a> {
     start_index: usize,
     end_index: usize,
-    link_type: AIPRLinkType<'a>,
+    link_type: AIPRLinkType,
     link_text: &'a str,
 }
 
@@ -61,10 +108,12 @@ impl<'a> AIPRLink<'a> {
     fn from_capture(cap: Captures<'a>) -> Option<AIPRLink<'a>> {
         let link_type = match (cap.get(0), cap.get(1), cap.get(2)) {
             (_, Some(typ), None) if typ.as_str() == "aipr_header" => {
-                Some(AIPRLinkType::Header(None))
+                Some(AIPRLinkType::Header(AIPRHeaderSettings::default()))
             }
             (_, Some(typ), Some(param_str)) if typ.as_str() == "aipr_header" => {
-                Some(AIPRLinkType::Header(Some(param_str.as_str().trim())))
+                Some(AIPRLinkType::Header(AIPRHeaderSettings::from_param_str(
+                    param_str.as_str().trim(),
+                )))
             }
             _ => None,
         };
@@ -161,13 +210,15 @@ mod tests {
                 AIPRLink {
                     start_index: 0,
                     end_index: 18,
-                    link_type: AIPRLinkType::Header(None),
+                    link_type: AIPRLinkType::Header(AIPRHeaderSettings::default()),
                     link_text: "{{ #aipr_header }}",
                 },
                 AIPRLink {
                     start_index: 19,
                     end_index: 58,
-                    link_type: AIPRLinkType::Header(Some("colab=nlp/lora.ipynb")),
+                    link_type: AIPRLinkType::Header(AIPRHeaderSettings::from_param_str(
+                        "colab=nlp/lora.ipynb"
+                    )),
                     link_text: "{{ #aipr_header colab=nlp/lora.ipynb }}",
                 },
             ]
