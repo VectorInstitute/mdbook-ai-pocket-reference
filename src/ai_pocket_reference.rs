@@ -225,4 +225,19 @@ mod tests {
         );
         Ok(())
     }
+
+    #[rstest]
+    #[case(
+        "submit_issue=false,colab=nlp/lora.ipynb,reading_time=true",
+        AIPRHeaderSettings { colab: Some("nlp/lora.ipynb".to_string()), submit_issue: false, ..Default::default()})
+    ]
+    fn test_aipr_header_settings(
+        #[case] param_str: &str,
+        #[case] expected_setting: AIPRHeaderSettings,
+    ) -> Result<()> {
+        let setting = AIPRHeaderSettings::from_param_str(param_str);
+        assert_eq!(setting, expected_setting);
+
+        Ok(())
+    }
 }
