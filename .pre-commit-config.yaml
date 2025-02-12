@@ -27,7 +27,8 @@ repos:
     hooks:
     - id: codespell
       exclude: |
-        target|
+        target |
+        test_book
       args:
         [
           "--ignore-words-list",
