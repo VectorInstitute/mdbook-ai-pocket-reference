@@ -8,6 +8,7 @@ use serde_json::value::Map;
 use std::collections::HashMap;
 
 const AIPR_HEADER_TEMPLATE: &str = include_str!("./templates/header.hbs");
+const WORDS_PER_MINUTE: usize = 200;
 
 #[derive(Default)]
 pub struct AIPRPreprocessor;
@@ -29,7 +30,8 @@ impl Preprocessor for AIPRPreprocessor {
     fn run(&self, _ctx: &PreprocessorContext, mut book: Book) -> anyhow::Result<Book> {
         book.for_each_mut(|section: &mut BookItem| {
             if let BookItem::Chapter(ref mut ch) = *section {
-                let content = replace_all(&ch.content);
+                let word_count = words_count::count(&ch.content);
+                let content = replace_all(&ch.content, word_count.words);
                 // mutate chapter content
                 ch.content = content;
             }
@@ -39,7 +41,7 @@ impl Preprocessor for AIPRPreprocessor {
 }
 
 #[allow(dead_code)]
-fn replace_all(s: &str) -> String {
+fn replace_all(s: &str, num_words: usize) -> String {
     // When replacing one thing in a string by something with a different length,
     // the indices after that will not correspond,
     // we therefore have to store the difference to correct this
@@ -48,7 +50,7 @@ fn replace_all(s: &str) -> String {
 
     for link in find_aipr_links(s) {
         replaced.push_str(&s[previous_end_index..link.start_index]);
-        let new_content = link.render().unwrap(); // todo: better error handling
+        let new_content = link.render(num_words).unwrap(); // todo: better error handling
         replaced.push_str(&new_content);
         previous_end_index = link.end_index;
     }
@@ -141,7 +143,7 @@ impl<'a> AIPRLink<'a> {
         })
     }
 
-    fn render(&self) -> anyhow::Result<String> {
+    fn render(&self, num_words: usize) -> anyhow::Result<String> {
         match &self.link_type {
             AIPRLinkType::Header(settings) => {
                 let mut handlebars = Handlebars::new();
@@ -160,8 +162,9 @@ impl<'a> AIPRLink<'a> {
                 }
                 data.insert("submit_issue".to_string(), to_json(settings.submit_issue));
                 if settings.reading_time {
+                    let rt_in_mins = (num_words as f32 / WORDS_PER_MINUTE as f32).round();
                     let rt = ReadingTime {
-                        value: "7 min".to_string(),
+                        value: format!("{:.0} min", rt_in_mins),
                     };
                     data.insert("reading_time".to_string(), to_json(rt));
                 }
@@ -324,8 +327,9 @@ mod tests {
             )),
             link_text: "{{ #aipr_header colab=nlp/lora.ipynb }}",
         };
+        let num_words = 201;
 
-        let html_string = link.render()?;
+        let html_string = link.render(num_words)?;
         let expected = "<div style=\"display: flex; justify-content: \
         space-between; align-items: center; margin-bottom: 2em;\">\n  <div>\n    \
         <a target=\"_blank\" href=\"https://github.com/VectorInstitute/\
@@ -336,7 +340,7 @@ mod tests {
         VectorInstitute/ai-pocket-reference-code/blob/main/notebooks/nlp/lora.ipynb\
         \">\n      <img src=\"https://colab.research.google.com/assets/colab-badge.svg\
         \" alt=\"Open In Colab\"/>\n    </a>\n    <p style=\"margin: 0;\">\
-        <small>Reading time: 7 min</small></p>\n  </div>\n</div>\n";
+        <small>Reading time: 1 min</small></p>\n  </div>\n</div>\n";
 
         println!("{:#?}", html_string);
 
@@ -353,15 +357,16 @@ mod tests {
             link_type: AIPRLinkType::Header(AIPRHeaderSettings::default()),
             link_text: "{{ #aipr_header }}",
         };
+        let num_words = 301;
 
-        let html_string = link.render()?;
+        let html_string = link.render(num_words)?;
         let expected = "<div style=\"display: flex; justify-content: \
         space-between; align-items: center; margin-bottom: 2em;\">\n  <div>\n    \
         <a target=\"_blank\" href=\"https://github.com/VectorInstitute/\
         ai-pocket-reference/issues/new?template=edit-request.yml\">\n      \
         <img src=\"https://img.shields.io/badge/Suggest_an_Edit-black?logo=\
         github&style=flat\" alt=\"Suggest an Edit\"/>\n    </a>\n    \
-        <p style=\"margin: 0;\"><small>Reading time: 7 min</small></p>\n  \
+        <p style=\"margin: 0;\"><small>Reading time: 2 min</small></p>\n  \
         </div>\n</div>\n";
 
         assert_eq!(html_string, expected);
@@ -379,8 +384,9 @@ mod tests {
             )),
             link_text: "{{ #aipr_header reading_time=false }}",
         };
+        let num_words = 200;
 
-        let html_string = link.render()?;
+        let html_string = link.render(num_words)?;
         let expected = "<div style=\"display: flex; justify-content: \
         space-between; align-items: center; margin-bottom: 2em;\">\n  <div>\n    \
         <a target=\"_blank\" href=\"https://github.com/VectorInstitute/\
