@@ -1,9 +1,11 @@
-use std::collections::HashMap;
-
-use mdbook::book::Book;
+use handlebars::Handlebars;
+use mdbook::book::{Book, BookItem};
 use mdbook::preprocess::{Preprocessor, PreprocessorContext};
 use once_cell::sync::Lazy;
 use regex::{CaptureMatches, Captures, Regex};
+use std::collections::HashMap;
+
+const AIPR_HEADER_TEMPLATE: &str = include_str!("./templates/header.hbs");
 
 #[derive(Default)]
 pub struct AIPRPreprocessor;
@@ -22,7 +24,14 @@ impl Preprocessor for AIPRPreprocessor {
         Self::NAME
     }
 
-    fn run(&self, _ctx: &PreprocessorContext, book: Book) -> anyhow::Result<Book> {
+    fn run(&self, _ctx: &PreprocessorContext, mut book: Book) -> anyhow::Result<Book> {
+        book.for_each_mut(|section: &mut BookItem| {
+            if let BookItem::Chapter(ref mut ch) = *section {
+                let content = replace_all(&ch.content);
+                // mutate chapter content
+                ch.content = content;
+            }
+        });
         Ok(book)
     }
 }
@@ -37,6 +46,8 @@ fn replace_all(s: &str) -> String {
 
     for link in find_aipr_links(s) {
         replaced.push_str(&s[previous_end_index..link.start_index]);
+        let new_content = link.render().unwrap(); // todo: better error handling
+        replaced.push_str(&new_content);
         previous_end_index = link.end_index;
     }
 
@@ -126,6 +137,17 @@ impl<'a> AIPRLink<'a> {
                 link_text: mat.as_str(),
             })
         })
+    }
+
+    fn render(&self) -> anyhow::Result<String> {
+        // todo: handlebars rendering
+        let mut handlebars = Handlebars::new();
+
+        // register template from a file and assign a name to it
+        handlebars
+            .register_template_string("aipr_header", AIPR_HEADER_TEMPLATE)
+            .unwrap();
+        Ok(String::default())
     }
 }
 
