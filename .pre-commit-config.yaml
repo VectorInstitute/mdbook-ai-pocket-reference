@@ -28,6 +28,7 @@ repos:
     - id: codespell
       exclude: |
         target|
+        test_book|
       args:
         [
           "--ignore-words-list",
