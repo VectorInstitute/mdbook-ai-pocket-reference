@@ -140,14 +140,17 @@ impl<'a> AIPRLink<'a> {
     }
 
     fn render(&self) -> anyhow::Result<String> {
-        // todo: handlebars rendering
-        let mut handlebars = Handlebars::new();
-
-        // register template from a file and assign a name to it
-        handlebars
-            .register_template_string("aipr_header", AIPR_HEADER_TEMPLATE)
-            .unwrap();
-        Ok(String::default())
+        match &self.link_type {
+            AIPRLinkType::Header(_settings) => {
+                // todo: handlebars rendering
+                let mut handlebars = Handlebars::new();
+                // register template from a file and assign a name to it
+                handlebars
+                    .register_template_string("aipr_header", AIPR_HEADER_TEMPLATE)
+                    .unwrap();
+                Ok(String::default())
+            }
+        }
     }
 }
 
