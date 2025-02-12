@@ -40,7 +40,6 @@ impl Preprocessor for AIPRPreprocessor {
     }
 }
 
-#[allow(dead_code)]
 fn replace_all(s: &str, num_words: usize) -> String {
     // When replacing one thing in a string by something with a different length,
     // the indices after that will not correspond,
@@ -59,13 +58,11 @@ fn replace_all(s: &str, num_words: usize) -> String {
     replaced
 }
 
-#[allow(dead_code)]
 #[derive(PartialEq, Debug, Clone)]
 enum AIPRLinkType {
     Header(AIPRHeaderSettings),
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 struct AIPRHeaderSettings {
     reading_time: bool,
@@ -188,7 +185,6 @@ pub struct ReadingTime {
     value: String,
 }
 
-#[allow(dead_code)]
 struct AIPRLinkIter<'a>(CaptureMatches<'a, 'a>);
 
 impl<'a> Iterator for AIPRLinkIter<'a> {
@@ -203,7 +199,6 @@ impl<'a> Iterator for AIPRLinkIter<'a> {
     }
 }
 
-#[allow(dead_code)]
 fn find_aipr_links(contents: &str) -> AIPRLinkIter<'_> {
     // lazily compute following regex
     // r"\\\{\{#.*\}\}|\{\{#([a-zA-Z0-9]+)\s*([^}]+)\}\}")?;
