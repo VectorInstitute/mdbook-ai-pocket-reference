@@ -59,4 +59,5 @@ by Hu, Edward J. et...
 
 Will render as:
 
-<img width="924" alt="image" src="https://github.com/user-attachments/assets/c0018fc9-eb1e-4901-a780-ca1d31d449de" />
+<img width="846" alt="image" src="https://github.com/user-attachments/assets/a6812900-4f7f-4cc8-b0d4-1e4a67a558c0" />
+
