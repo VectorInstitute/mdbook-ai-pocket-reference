@@ -26,11 +26,26 @@ impl Preprocessor for AIPRPreprocessor {
 }
 
 #[allow(dead_code)]
+fn replace_all(s: &str) -> String {
+    // When replacing one thing in a string by something with a different length,
+    // the indices after that will not correspond,
+    // we therefore have to store the difference to correct this
+    let mut previous_end_index = 0;
+    let mut replaced = String::new();
+
+    for link in find_aipr_links(s) {
+        replaced.push_str(&s[previous_end_index..link.start_index]);
+        previous_end_index = link.end_index;
+    }
+
+    replaced.push_str(&s[previous_end_index..]);
+    replaced
+}
+
+#[allow(dead_code)]
 #[derive(PartialEq, Debug, Clone)]
 enum AIPRLinkType<'a> {
-    SubmitIssue,
-    ReadingTime,
-    GoogleColab(&'a str),
+    Header(Option<&'a str>),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -44,18 +59,12 @@ struct AIPRLink<'a> {
 impl<'a> AIPRLink<'a> {
     #[allow(dead_code)]
     fn from_capture(cap: Captures<'a>) -> Option<AIPRLink<'a>> {
-        println!("{:#?}", cap);
         let link_type = match (cap.get(0), cap.get(1), cap.get(2)) {
-            (_, Some(typ), _) if (typ.as_str() == "reading_time") => {
-                Some(AIPRLinkType::ReadingTime)
+            (_, Some(typ), None) if typ.as_str() == "aipr_header" => {
+                Some(AIPRLinkType::Header(None))
             }
-            (_, Some(typ), _) if (typ.as_str() == "submit_issue") => {
-                Some(AIPRLinkType::SubmitIssue)
-            }
-            (_, Some(typ), Some(colab_link))
-                if ((typ.as_str() == "colab") && (!colab_link.as_str().trim().is_empty())) =>
-            {
-                Some(AIPRLinkType::GoogleColab(colab_link.as_str().trim()))
+            (_, Some(typ), Some(param_str)) if typ.as_str() == "aipr_header" => {
+                Some(AIPRLinkType::Header(Some(param_str.as_str().trim())))
             }
             _ => None,
         };
@@ -115,7 +124,7 @@ mod tests {
 
     #[fixture]
     fn simple_book_content() -> String {
-        "{{ #submit_issue }} {{ #reading_time }} {{ #colab nlp/lora.ipynb }} Some random text with and more text ..."
+        "{{ #aipr_header }} {{ #aipr_header colab=nlp/lora.ipynb }} Some random text with and more text ..."
             .to_string()
     }
 
@@ -151,21 +160,15 @@ mod tests {
             vec![
                 AIPRLink {
                     start_index: 0,
-                    end_index: 19,
-                    link_type: AIPRLinkType::SubmitIssue,
-                    link_text: "{{ #submit_issue }}",
+                    end_index: 18,
+                    link_type: AIPRLinkType::Header(None),
+                    link_text: "{{ #aipr_header }}",
                 },
                 AIPRLink {
-                    start_index: 20,
-                    end_index: 39,
-                    link_type: AIPRLinkType::ReadingTime,
-                    link_text: "{{ #reading_time }}",
-                },
-                AIPRLink {
-                    start_index: 40,
-                    end_index: 67,
-                    link_type: AIPRLinkType::GoogleColab("nlp/lora.ipynb"),
-                    link_text: "{{ #colab nlp/lora.ipynb }}",
+                    start_index: 19,
+                    end_index: 58,
+                    link_type: AIPRLinkType::Header(Some("colab=nlp/lora.ipynb")),
+                    link_text: "{{ #aipr_header colab=nlp/lora.ipynb }}",
                 },
             ]
         );
