@@ -25,11 +25,6 @@ jobs:
         run: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
-
-  release_github:
-    needs: publish_crate
-    runs-on: ubuntu-latest
-    steps:
       - name: Create GitHub Release
         id: create_release
         uses: ncipollo/release-action@cdcc88a9acf3ca41c16c37bb7d21b9ad48560d87 # v1.15.0
