@@ -7,3 +7,6 @@ title = "github-authors"
 
 [preprocessor.github-authors]
 command = "cargo run --manifest-path=../Cargo.toml --locked"
+
+[output.html]
+additional-css = ["mdbook-ai-pocket-reference.css"]
