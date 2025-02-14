@@ -8,6 +8,7 @@ use serde_json::value::Map;
 use std::collections::HashMap;
 
 const AIPR_HEADER_TEMPLATE: &str = include_str!("./templates/header.hbs");
+const AIPR_FOOTER_HTML: &str = include_str!("./templates/footer.html");
 const WORDS_PER_MINUTE: usize = 200;
 
 #[derive(Default)]
@@ -38,7 +39,11 @@ impl Preprocessor for AIPRPreprocessor {
         book.for_each_mut(|section: &mut BookItem| {
             if let BookItem::Chapter(ref mut ch) = *section {
                 let word_count = words_count::count(&ch.content);
-                let content = replace_all(&ch.content, word_count.words);
+                let mut content = replace_all(&ch.content, word_count.words);
+
+                // add footer with logo
+                content.push_str(AIPR_FOOTER_HTML);
+
                 // mutate chapter content
                 ch.content = content;
             }

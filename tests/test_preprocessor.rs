@@ -18,16 +18,21 @@ fn aipr_header_works() {
     );
     assert!(!ch1.contains("blob/main/notebooks/"));
     assert!(ch1.contains("<small>Reading time: "));
+    assert!(ch1.contains("<div class=\"vector-logo\">"));
+
     // chapter 1.1
     assert!(
         ch1_1.contains("https://img.shields.io/badge/Suggest_an_Edit-black?logo=github&style=flat")
     );
     assert!(ch1_1.contains("blob/main/notebooks/nlp/attention.ipynb"));
     assert!(ch1_1.contains("<small>Reading time: "));
+    assert!(ch1_1.contains("<div class=\"vector-logo\">"));
+
     // chapter 1.2
     assert!(
         ch1_2.contains("https://img.shields.io/badge/Suggest_an_Edit-black?logo=github&style=flat")
     );
     assert!(!ch1_2.contains("blob/main/notebooks/"));
     assert!(!ch1_2.contains("<small>Reading time: "));
+    assert!(ch1_2.contains("<div class=\"vector-logo\">"));
 }

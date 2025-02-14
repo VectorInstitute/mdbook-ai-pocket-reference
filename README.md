@@ -18,6 +18,13 @@ chapter-level contributor sections featuring authors' GitHub profiles.
 cargo install mdbook-ai-pocket-reference
 ```
 
+1. Download the `src/bin/assets/mdbook-ai-pocket-reference.css` and add to your
+book's root directory:
+
+> [!NOTE]
+> If working with `ai-pocket-reference` collection, then this additional css
+> file is already included, and so this step can be safely skipped.
+
 ## Usage
 
 1. Add to your `book.toml`:
@@ -25,6 +32,9 @@ cargo install mdbook-ai-pocket-reference
 ```toml
 [preprocessor.ai-pocket-reference]
 command = "mdbook-ai-pocket-reference"
+
+[output.html]
+additional-css = ["mdbook-ai-pocket-reference.css"]
 ```
 
 1. Add ai-pocket-reference header:
@@ -60,4 +70,3 @@ by Hu, Edward J. et...
 Will render as:
 
 <img width="846" alt="image" src="https://github.com/user-attachments/assets/a6812900-4f7f-4cc8-b0d4-1e4a67a558c0" />
-
