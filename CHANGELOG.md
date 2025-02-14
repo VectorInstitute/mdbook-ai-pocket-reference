@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ...
 
+## [0.1.1] - 2025-02-14
+
+### Added
+
+- Footer to every chapter with Vector logo (#9)
+
 ## [0.1.0] - 2025-02-12
 
 ### Added
