@@ -9,7 +9,7 @@ repository = "https://github.com/VectorInstitute/mdbook-ai-pocket-reference"
 
 [dependencies]
 anyhow = "1.0.95"
-clap = { version = "4.5.28", features = ["derive", "std"] }
+clap = { version = "4.5.30", features = ["derive", "std"] }
 env_logger = "0.11.6"
 handlebars = "6.3.1"
 log = "0.4.25"
