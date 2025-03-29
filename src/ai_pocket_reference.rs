@@ -339,7 +339,7 @@ mod tests {
 
     #[fixture]
     fn simple_book_content() -> String {
-        "{{ #aipr_header }} {{ #aipr_header colab=nlp/lora.ipynb }} Some random text with and more text ..."
+        "{{ #aipr_header }} {{ #aipr_header colab=nlp/lora.ipynb }} Some random [text with](https://fake.io) and more text ..."
             .to_string()
     }
 
@@ -347,6 +347,7 @@ mod tests {
     fn test_find_links_no_author_links() -> Result<()> {
         let s = "Some random text without link...";
         assert!(find_aipr_links(s).collect::<Vec<_>>() == vec![]);
+        assert!(find_md_links(s).collect::<Vec<_>>() == vec![]);
         Ok(())
     }
 
@@ -503,6 +504,24 @@ mod tests {
         </div>\n</div>\n";
 
         assert_eq!(html_string, expected);
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_finds_md_link(simple_book_content: String) -> Result<()> {
+        let res = find_md_links(&simple_book_content[..]).collect::<Vec<_>>();
+        println!("\nOUTPUT: {res:?}\n");
+
+        assert_eq!(
+            res,
+            vec![MDLink {
+                start_index: 71,
+                end_index: 99,
+                text: "text with",
+                url: "https://fake.io"
+            }]
+        );
 
         Ok(())
     }
