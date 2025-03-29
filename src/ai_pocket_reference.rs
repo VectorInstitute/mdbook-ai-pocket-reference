@@ -561,4 +561,20 @@ mod tests {
 
         Ok(())
     }
+
+    #[rstest]
+    fn test_replace_all_md_links() -> Result<()> {
+        let content = "This is [good link](https://good.io), \
+            whereas ![this](https://not-covered.io), and \
+            neither is \\[this\\](http://not-covered.io).";
+
+        let new_content = replace_all_md_links(content);
+        let expected = "This is <a href=\"https://good.io\" target=\"_blank\" \
+         rel=\"noopener noreferrer\">good link</a>\n, whereas ![this](https://not-covered.io), \
+         and neither is \\[this\\](http://not-covered.io).";
+
+        assert_eq!(new_content, expected);
+
+        Ok(())
+    }
 }
