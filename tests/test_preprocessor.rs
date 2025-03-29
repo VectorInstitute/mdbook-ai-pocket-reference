@@ -19,6 +19,7 @@ fn aipr_header_works() {
     assert!(!ch1.contains("blob/main/notebooks/"));
     assert!(ch1.contains("<small>Reading time: "));
     assert!(ch1.contains("<div class=\"vector-logo\">"));
+    assert!(ch1.contains("<a href=\"https://vectorinstitute.ai\" target=\"_blank\""));
 
     // chapter 1.1
     assert!(
