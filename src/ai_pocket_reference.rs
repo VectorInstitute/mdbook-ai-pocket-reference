@@ -555,7 +555,7 @@ mod tests {
 
         let html_string = link.render()?;
         let expected = "<a href=\"https://fake.io\" target=\"_blank\" \
-        rel=\"noopener noreferrer\">some text</a>\n";
+        rel=\"noopener noreferrer\">some text</a>";
 
         assert_eq!(html_string, expected);
 
@@ -570,7 +570,7 @@ mod tests {
 
         let new_content = replace_all_md_links(content);
         let expected = "This is <a href=\"https://good.io\" target=\"_blank\" \
-         rel=\"noopener noreferrer\">good link</a>\n, whereas ![this](https://not-covered.io), \
+         rel=\"noopener noreferrer\">good link</a>, whereas ![this](https://not-covered.io), \
          and neither is \\[this\\](http://not-covered.io).";
 
         assert_eq!(new_content, expected);
