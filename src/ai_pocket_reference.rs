@@ -305,7 +305,7 @@ impl<'a> MDLink<'a> {
 
         // register template
         handlebars
-            .register_template_string("md_link_expansion", MDLINK_TEMPLATE)
+            .register_template_string("md_link_expansion", MDLINK_TEMPLATE.trim())
             .unwrap();
 
         // create data for rendering handlebar
