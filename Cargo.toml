@@ -1,6 +1,6 @@
 [package]
 name = "mdbook-ai-pocket-reference"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "mdbook preprocessor for the ai-pocket-reference project."
 authors = ["Andrei Fajardo <andrei.fajardo@vectorinstitute.ai>"]

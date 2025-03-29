@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD024 -->
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -7,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 ...
+
+## [0.1.2] - 2025-03-29
+
+### Added
+
+- MDLink for opening external links specified using markdown style in new tab (#31)
 
 ## [0.1.1] - 2025-02-14
 

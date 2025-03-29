@@ -9,8 +9,13 @@
 ![GitHub Release](https://img.shields.io/github/v/release/VectorInstitute/mdbook-ai-pocket-reference)
 ![docs.rs](https://img.shields.io/docsrs/mdbook-ai-pocket-reference)
 
-A preprocessor for [mdbook](https://rust-lang.github.io/mdBook/) that creates
-chapter-level contributor sections featuring authors' GitHub profiles.
+A preprocessor for [mdbook](https://rust-lang.github.io/mdBook/) specifically
+for AI Pocket References by Vector Insitute. It provides:
+
+- standard header for AI Pocket References
+- standard footer for AI Pocket References
+- expansion of markdown links \[some text\]\(someurl.io\) into html that opens
+the link in a new browser tab
 
 ## Installation
 
