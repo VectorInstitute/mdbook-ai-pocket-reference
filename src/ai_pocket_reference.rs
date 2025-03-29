@@ -54,6 +54,14 @@ impl Preprocessor for AIPRPreprocessor {
 }
 
 fn replace_all(s: &str, num_words: usize) -> String {
+    // First replace all AIPR links
+    let aipr_replaced = replace_all_aipr_links(s, num_words);
+
+    // Then replace all Markdown links
+    replace_all_md_links(&aipr_replaced)
+}
+
+fn replace_all_aipr_links(s: &str, num_words: usize) -> String {
     // This implementation follows closely to the implementation of
     // mdbook::preprocess::links::replace_all.
     let mut previous_end_index = 0;
@@ -62,6 +70,21 @@ fn replace_all(s: &str, num_words: usize) -> String {
     for link in find_aipr_links(s) {
         replaced.push_str(&s[previous_end_index..link.start_index]);
         let new_content = link.render(num_words).unwrap(); // todo: better error handling
+        replaced.push_str(&new_content);
+        previous_end_index = link.end_index;
+    }
+
+    replaced.push_str(&s[previous_end_index..]);
+    replaced
+}
+
+fn replace_all_md_links(s: &str) -> String {
+    let mut previous_end_index = 0;
+    let mut replaced = String::new();
+
+    for link in find_md_links(s) {
+        replaced.push_str(&s[previous_end_index..link.start_index]);
+        let new_content = link.render().unwrap();
         replaced.push_str(&new_content);
         previous_end_index = link.end_index;
     }
@@ -278,6 +301,34 @@ impl<'a> MDLink<'a> {
 
         Ok(html_string)
     }
+}
+
+struct MDLinkIter<'a>(CaptureMatches<'a, 'a>);
+
+impl<'a> Iterator for MDLinkIter<'a> {
+    type Item = MDLink<'a>;
+    fn next(&mut self) -> Option<MDLink<'a>> {
+        for cap in &mut self.0 {
+            if let Some(inc) = MDLink::from_capture(cap) {
+                return Some(inc);
+            }
+        }
+        None
+    }
+}
+
+fn find_md_links(contents: &str) -> MDLinkIter<'_> {
+    static RE: Lazy<Regex> = Lazy::new(|| {
+        Regex::new(
+            r"(?x)
+            \[([^\]]*(?:\\.[^\]]*)*)\]    # link text in square brackets
+            \(([^)]*(?:\\.[^)]*)*)\)      # link URL in parentheses
+            ",
+        )
+        .unwrap()
+    });
+
+    MDLinkIter(RE.captures_iter(contents))
 }
 
 #[cfg(test)]
