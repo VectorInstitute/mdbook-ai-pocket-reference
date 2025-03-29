@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 const AIPR_HEADER_TEMPLATE: &str = include_str!("./templates/header.hbs");
 const AIPR_FOOTER_HTML: &str = include_str!("./templates/footer.html");
+const MDLINK_TEMPLATE: &str = include_str!("./templates/md_link.hbs");
 const WORDS_PER_MINUTE: usize = 200;
 
 #[derive(Default)]
@@ -53,6 +54,14 @@ impl Preprocessor for AIPRPreprocessor {
 }
 
 fn replace_all(s: &str, num_words: usize) -> String {
+    // First replace all AIPR links
+    let aipr_replaced = replace_all_aipr_links(s, num_words);
+
+    // Then replace all Markdown links
+    replace_all_md_links(&aipr_replaced)
+}
+
+fn replace_all_aipr_links(s: &str, num_words: usize) -> String {
     // This implementation follows closely to the implementation of
     // mdbook::preprocess::links::replace_all.
     let mut previous_end_index = 0;
@@ -62,6 +71,35 @@ fn replace_all(s: &str, num_words: usize) -> String {
         replaced.push_str(&s[previous_end_index..link.start_index]);
         let new_content = link.render(num_words).unwrap(); // todo: better error handling
         replaced.push_str(&new_content);
+        previous_end_index = link.end_index;
+    }
+
+    replaced.push_str(&s[previous_end_index..]);
+    replaced
+}
+
+fn replace_all_md_links(s: &str) -> String {
+    let mut previous_end_index = 0;
+    let mut replaced = String::new();
+
+    for link in find_md_links(s) {
+        // Add text up to the current link
+        let prefix = &s[previous_end_index..link.start_index];
+        replaced.push_str(prefix);
+
+        // Check if the prefix ends with a backslash or exclamation mark
+        let last_char = prefix.chars().last();
+        let is_escaped = last_char == Some('\\') || last_char == Some('!');
+
+        if is_escaped {
+            // For escaped links, just add the original link text
+            replaced.push_str(&s[link.start_index..link.end_index]);
+        } else {
+            // For normal links, render as HTML
+            let new_content = link.render().unwrap();
+            replaced.push_str(&new_content);
+        }
+
         previous_end_index = link.end_index;
     }
 
@@ -230,6 +268,86 @@ fn find_aipr_links(contents: &str) -> AIPRLinkIter<'_> {
     AIPRLinkIter(RE.captures_iter(contents))
 }
 
+#[derive(PartialEq, Debug, Clone)]
+struct MDLink<'a> {
+    start_index: usize,
+    end_index: usize,
+    text: &'a str,
+    url: &'a str,
+}
+
+impl<'a> MDLink<'a> {
+    #[allow(dead_code)]
+    fn from_capture(cap: Captures<'a>) -> Option<MDLink<'a>> {
+        let md_tuple = match (cap.get(0), cap.get(1), cap.get(2)) {
+            (_, Some(text_str), Some(url_str))
+                if (url_str.as_str().starts_with("https://")
+                    || url_str.as_str().starts_with("http://")) =>
+            {
+                Some((text_str.as_str(), url_str.as_str()))
+            }
+            _ => None,
+        };
+
+        md_tuple.and_then(|(text, url)| {
+            cap.get(0).map(|mat| MDLink {
+                start_index: mat.start(),
+                end_index: mat.end(),
+                text,
+                url,
+            })
+        })
+    }
+
+    #[allow(dead_code)]
+    fn render(&self) -> anyhow::Result<String> {
+        let mut handlebars = Handlebars::new();
+
+        // register template
+        handlebars
+            .register_template_string("md_link_expansion", MDLINK_TEMPLATE)
+            .unwrap();
+
+        // create data for rendering handlebar
+        let mut data = Map::new();
+        data.insert("text".to_string(), to_json(self.text));
+        data.insert("url".to_string(), to_json(self.url));
+
+        // render
+        let html_string = handlebars.render("md_link_expansion", &data)?;
+
+        Ok(html_string)
+    }
+}
+
+struct MDLinkIter<'a>(CaptureMatches<'a, 'a>);
+
+impl<'a> Iterator for MDLinkIter<'a> {
+    type Item = MDLink<'a>;
+    fn next(&mut self) -> Option<MDLink<'a>> {
+        for cap in &mut self.0 {
+            if let Some(inc) = MDLink::from_capture(cap) {
+                return Some(inc);
+            }
+        }
+        None
+    }
+}
+
+fn find_md_links(contents: &str) -> MDLinkIter<'_> {
+    static RE: Lazy<Regex> = Lazy::new(|| {
+        Regex::new(
+            r"(?x)
+            \[([^\]]*(?:\\.[^\]]*)*)\]    # link text in square brackets
+            \(([^)]*(?:\\.[^)]*)*)\)      # link URL in parentheses
+            ",
+        )
+        .unwrap()
+    });
+
+    MDLinkIter(RE.captures_iter(contents))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -238,7 +356,7 @@ mod tests {
 
     #[fixture]
     fn simple_book_content() -> String {
-        "{{ #aipr_header }} {{ #aipr_header colab=nlp/lora.ipynb }} Some random text with and more text ..."
+        "{{ #aipr_header }} {{ #aipr_header colab=nlp/lora.ipynb }} Some random [text with](https://fake.io) and more text ..."
             .to_string()
     }
 
@@ -246,6 +364,7 @@ mod tests {
     fn test_find_links_no_author_links() -> Result<()> {
         let s = "Some random text without link...";
         assert!(find_aipr_links(s).collect::<Vec<_>>() == vec![]);
+        assert!(find_md_links(s).collect::<Vec<_>>() == vec![]);
         Ok(())
     }
 
@@ -259,8 +378,9 @@ mod tests {
 
     #[rstest]
     fn test_find_links_unknown_link_type() -> Result<()> {
-        let s = "Some random text with {{#my_author ar.rs}} and {{#auth}} {{baz}} {{#bar}}...";
+        let s = "Some random \\[text with\\](test) {{#my_author ar.rs}} and {{#auth}} {{baz}} {{#bar}}...";
         assert!(find_aipr_links(s).collect::<Vec<_>>() == vec![]);
+        assert!(find_md_links(s).collect::<Vec<_>>() == vec![]);
         Ok(())
     }
 
@@ -402,6 +522,58 @@ mod tests {
         </div>\n</div>\n";
 
         assert_eq!(html_string, expected);
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_finds_md_link(simple_book_content: String) -> Result<()> {
+        let res = find_md_links(&simple_book_content[..]).collect::<Vec<_>>();
+        println!("\nOUTPUT: {res:?}\n");
+
+        assert_eq!(
+            res,
+            vec![MDLink {
+                start_index: 71,
+                end_index: 99,
+                text: "text with",
+                url: "https://fake.io"
+            }]
+        );
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_md_link_render() -> Result<()> {
+        let link = MDLink {
+            start_index: 19,
+            end_index: 58,
+            text: "some text",
+            url: "https://fake.io",
+        };
+
+        let html_string = link.render()?;
+        let expected = "<a href=\"https://fake.io\" target=\"_blank\" \
+        rel=\"noopener noreferrer\">some text</a>\n";
+
+        assert_eq!(html_string, expected);
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_replace_all_md_links() -> Result<()> {
+        let content = "This is [good link](https://good.io), \
+            whereas ![this](https://not-covered.io), and \
+            neither is \\[this\\](http://not-covered.io).";
+
+        let new_content = replace_all_md_links(content);
+        let expected = "This is <a href=\"https://good.io\" target=\"_blank\" \
+         rel=\"noopener noreferrer\">good link</a>\n, whereas ![this](https://not-covered.io), \
+         and neither is \\[this\\](http://not-covered.io).";
+
+        assert_eq!(new_content, expected);
 
         Ok(())
     }
