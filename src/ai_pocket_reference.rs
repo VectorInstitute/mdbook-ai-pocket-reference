@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 const AIPR_HEADER_TEMPLATE: &str = include_str!("./templates/header.hbs");
 const AIPR_FOOTER_HTML: &str = include_str!("./templates/footer.html");
+const MDLINK_TEMPLATE: &str = include_str!("./templates/md_link.hbs");
 const WORDS_PER_MINUTE: usize = 200;
 
 #[derive(Default)]
@@ -264,7 +265,7 @@ impl<'a> MDLink<'a> {
 
         // register template
         handlebars
-            .register_template_string("md_link_expansion", AIPR_HEADER_TEMPLATE)
+            .register_template_string("md_link_expansion", MDLINK_TEMPLATE)
             .unwrap();
 
         // create data for rendering handlebar
