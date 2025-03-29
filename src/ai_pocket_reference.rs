@@ -230,6 +230,55 @@ fn find_aipr_links(contents: &str) -> AIPRLinkIter<'_> {
     AIPRLinkIter(RE.captures_iter(contents))
 }
 
+#[derive(PartialEq, Debug, Clone)]
+struct MDLink<'a> {
+    start_index: usize,
+    end_index: usize,
+    text: &'a str,
+    url: &'a str,
+}
+
+impl<'a> MDLink<'a> {
+    #[allow(dead_code)]
+    fn from_capture(cap: Captures<'a>) -> Option<MDLink<'a>> {
+        let md_tuple = match (cap.get(0), cap.get(1), cap.get(2)) {
+            (_, Some(text_str), Some(url_str)) if !text_str.as_str().starts_with("\\[") => {
+                Some((text_str.as_str(), url_str.as_str()))
+            }
+            _ => None,
+        };
+
+        md_tuple.and_then(|(text, url)| {
+            cap.get(0).map(|mat| MDLink {
+                start_index: mat.start(),
+                end_index: mat.end(),
+                text,
+                url,
+            })
+        })
+    }
+
+    #[allow(dead_code)]
+    fn render(&self) -> anyhow::Result<String> {
+        let mut handlebars = Handlebars::new();
+
+        // register template
+        handlebars
+            .register_template_string("md_link_expansion", AIPR_HEADER_TEMPLATE)
+            .unwrap();
+
+        // create data for rendering handlebar
+        let mut data = Map::new();
+        data.insert("text".to_string(), to_json(self.text));
+        data.insert("url".to_string(), to_json(self.url));
+
+        // render
+        let html_string = handlebars.render("md_link_expansion", &data)?;
+
+        Ok(html_string)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
