@@ -83,9 +83,23 @@ fn replace_all_md_links(s: &str) -> String {
     let mut replaced = String::new();
 
     for link in find_md_links(s) {
-        replaced.push_str(&s[previous_end_index..link.start_index]);
-        let new_content = link.render().unwrap();
-        replaced.push_str(&new_content);
+        // Add text up to the current link
+        let prefix = &s[previous_end_index..link.start_index];
+        replaced.push_str(prefix);
+
+        // Check if the prefix ends with a backslash or exclamation mark
+        let last_char = prefix.chars().last();
+        let is_escaped = last_char == Some('\\') || last_char == Some('!');
+
+        if is_escaped {
+            // For escaped links, just add the original link text
+            replaced.push_str(&s[link.start_index..link.end_index]);
+        } else {
+            // For normal links, render as HTML
+            let new_content = link.render().unwrap();
+            replaced.push_str(&new_content);
+        }
+
         previous_end_index = link.end_index;
     }
 
@@ -266,7 +280,10 @@ impl<'a> MDLink<'a> {
     #[allow(dead_code)]
     fn from_capture(cap: Captures<'a>) -> Option<MDLink<'a>> {
         let md_tuple = match (cap.get(0), cap.get(1), cap.get(2)) {
-            (_, Some(text_str), Some(url_str)) if !text_str.as_str().starts_with("\\[") => {
+            (_, Some(text_str), Some(url_str))
+                if (url_str.as_str().starts_with("https://")
+                    || url_str.as_str().starts_with("http://")) =>
+            {
                 Some((text_str.as_str(), url_str.as_str()))
             }
             _ => None,
@@ -361,8 +378,9 @@ mod tests {
 
     #[rstest]
     fn test_find_links_unknown_link_type() -> Result<()> {
-        let s = "Some random text with {{#my_author ar.rs}} and {{#auth}} {{baz}} {{#bar}}...";
+        let s = "Some random \\[text with\\](test) {{#my_author ar.rs}} and {{#auth}} {{baz}} {{#bar}}...";
         assert!(find_aipr_links(s).collect::<Vec<_>>() == vec![]);
+        assert!(find_md_links(s).collect::<Vec<_>>() == vec![]);
         Ok(())
     }
 
@@ -522,6 +540,24 @@ mod tests {
                 url: "https://fake.io"
             }]
         );
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_md_link_render() -> Result<()> {
+        let link = MDLink {
+            start_index: 19,
+            end_index: 58,
+            text: "some text",
+            url: "https://fake.io",
+        };
+
+        let html_string = link.render()?;
+        let expected = "<a href=\"https://fake.io\" target=\"_blank\" \
+        rel=\"noopener noreferrer\">some text</a>\n";
+
+        assert_eq!(html_string, expected);
 
         Ok(())
     }
