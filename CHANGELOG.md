@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ...
 
+## [0.1.3] - 2025-03-29
+
+### Fixed
+
+- MDLink html template adds a new line due to end of file which yields undesirable results (#33)
+
 ## [0.1.2] - 2025-03-29
 
 ### Added
